@@ -11,7 +11,7 @@ export class GhostUtils implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Ghost Utils',
 		name: 'ghostUtils',
-		icon: 'file:GhostUtils.svg',
+		icon: 'file:ghostutils.svg',
 		group: ['transform'],
 		version: 1,
 		description: 'A collection of utility nodes for Ghost',
