@@ -6,6 +6,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
 import { htmlToLexical } from '@tryghost/kg-html-to-lexical';
+import LexicalHTMLRenderer = require('@tryghost/kg-lexical-html-renderer');
 
 export class GhostUtils implements INodeType {
 	description: INodeTypeDescription = {
@@ -52,6 +53,11 @@ export class GhostUtils implements INodeType {
 						value: 'htmlToLexical',
 						action: 'Convert HTML to lexical',
 					},
+					{
+						name: 'Lexical to HTML',
+						value: 'lexicalToHtml',
+						action: 'Convert lexical to HTML',
+					},
 				],
 				default: 'htmlToLexical',
 			},
@@ -75,6 +81,46 @@ export class GhostUtils implements INodeType {
 				default: '',
 				placeholder: '<h1>Hello World</h1>',
 				description: 'The HTML to convert to Lexical',
+			},
+			{
+				displayName: 'Lexical',
+				name: 'lexical',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['convert'],
+						operation: ['lexicalToHtml'],
+					},
+				},
+				typeOptions: {
+					rows: 10,
+				},
+				default: '',
+				placeholder: '{"root":{...}}',
+				description: 'The Lexical to convert to HTML',
+			},
+			{
+				displayName: 'Target',
+				name: 'target',
+				type: 'options',
+				options: [
+					{
+						name: 'HTML',
+						value: 'html',
+					},
+					{
+						name: 'Email',
+						value: 'email',
+					},
+				],
+				default: 'html',
+				displayOptions: {
+					show: {
+						resource: ['convert'],
+						operation: ['lexicalToHtml'],
+					},
+				},
+				description: 'The target output format',
 			},
 			{
 				displayName: 'Double Stringify',
@@ -105,15 +151,28 @@ export class GhostUtils implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
-				if (resource === 'convert' && operation === 'htmlToLexical') {
-					const html = this.getNodeParameter('html', itemIndex, '') as string;
-					const doubleStringify = this.getNodeParameter('doubleStringify', itemIndex, false) as boolean;
-					item = items[itemIndex];
+				item = items[itemIndex];
+				if (resource === 'convert') {
+					if (operation === 'htmlToLexical') {
+						const html = this.getNodeParameter('html', itemIndex, '') as string;
+						const doubleStringify = this.getNodeParameter('doubleStringify', itemIndex, false) as boolean;
 
-					const lexical = htmlToLexical(html);
+						const lexical = htmlToLexical(html);
 
-					item.json.lexical = doubleStringify ? JSON.stringify(JSON.stringify(lexical)) : lexical;
-					item.json.html = html;
+						item.json.lexical = doubleStringify
+							? JSON.stringify(JSON.stringify(lexical))
+							: lexical;
+						item.json.html = html;
+					} else if (operation === 'lexicalToHtml') {
+						const lexical = this.getNodeParameter('lexical', itemIndex, '') as string;
+						const target = this.getNodeParameter('target', itemIndex, 'html') as 'html' | 'email';
+
+						const renderer = new LexicalHTMLRenderer();
+						const html = await renderer.render(lexical, { target });
+
+						item.json.html = html;
+						item.json.lexical = lexical;
+					}
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {
