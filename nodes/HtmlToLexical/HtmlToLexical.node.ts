@@ -32,6 +32,13 @@ export class HtmlToLexical implements INodeType {
 				placeholder: '<h1>Hello World</h1>',
 				description: 'The HTML to convert to Lexical',
 			},
+			{
+				displayName: 'Double Stringify',
+				name: 'doubleStringify',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to double stringify the Lexical output',
+			},
 		],
 	};
 
@@ -47,8 +54,9 @@ export class HtmlToLexical implements INodeType {
 				item = items[itemIndex];
 
 				const lexical = htmlToLexical(html);
+				const doubleStringify = this.getNodeParameter('doubleStringify', itemIndex, false) as boolean;
 
-				item.json.lexical = lexical;
+				item.json.lexical = doubleStringify ? JSON.stringify(JSON.stringify(lexical)) : lexical;
 				item.json.html = html;
 
 			} catch (error) {
